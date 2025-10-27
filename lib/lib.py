@@ -7,7 +7,6 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset
 
-from torchvision import transforms
 from sklearn.feature_extraction.image import img_to_graph
 from torch_geometric.utils import remove_self_loops
 import scipy.sparse as sp
@@ -31,17 +30,7 @@ class SiameseSignatureDataset(Dataset):
 
             self.samples.append([img1, img2, label])
 
-            # folder_path = os.path.join(root_dir, folder)
-            # if os.path.isdir(folder_path):
-            #     for img_name in os.listdir(folder_path):
-            #         if self._is_image_file(img_name):
-            #             self.samples.append(os.path.join(folder_path, img_name))
-
         print(f"Loaded {len(self.samples)} signature images (genuine + forged)")
-
-    # def _is_image_file(self, filename):
-    #     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
-    #     return os.path.splitext(filename.lower())[1] in valid_exts
 
     def __len__(self):
         return len(self.samples)
@@ -104,13 +93,12 @@ class SignatureDataset(Dataset):
                 fallback = self.transform(fallback)
             return fallback
 
-def image_to_graph(img_tensor, target_size=(32, 32)):
+def image_to_graph(img_tensor):
     """
     Convert image tensor to graph
     
     Args:
         img_tensor: torch.Tensor (C, H, W) or (H, W)
-        target_size: tuple (H, W) for downsampling
     
     Returns:
         Data object with x and edge_index
@@ -123,12 +111,8 @@ def image_to_graph(img_tensor, target_size=(32, 32)):
     if len(img_tensor.shape) == 2:
         img_tensor = img_tensor.unsqueeze(0)
     
-    # Downsample FIRST (operates on tensor)
-    resize = transforms.Resize(target_size)
-    img_small = resize(img_tensor)
-    
-    # Convert to numpy for img_to_graph
-    img = img_small.squeeze().numpy()
+    # Use existing tensor directly (no resize)
+    img = img_tensor.squeeze().numpy()
     
     # Convert to graph
     graph_coo = img_to_graph(img, return_as=sp.coo_array)
